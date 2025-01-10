@@ -11,7 +11,8 @@
   "type": "module",
   "dependencies": {
     "express": "^4.16.1",
-    "puppeteer": "^1.19.0"
+    "puppeteer": "^1.19.0",
+    "puppeteer-cluster": "^0.24.0"
   },
   "devDependencies": {
     "@types/puppeteer": "^7.0.4"

@@ -1,20 +1,37 @@
 import express from "express";
 import pkg from 'puppeteer';
+import cluster from 'cluster';
+import os from 'os';
 
 // Constants
 const PORT = 80;
 const HOST = "0.0.0.0";
+const numCPUs = 4;
 
-// App
+if (cluster.isMaster) {
+  console.log(`Master ${process.pid} is running`);
+
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`Worker ${worker.process.pid} died`);
+    cluster.fork();
+  });
+} else {
 const app = express();
-app.listen(PORT, HOST);
-
-app.get("/", (req, res) => {
-  res.send("Hello\n");
+  app.listen(PORT, HOST, () => {
+    console.log(`Worker ${process.pid} started`);
 });
 
-app.get("/bwscript", async (req, res, next) => {
+  app.get("/", (req, res) => {
+    res.send("Hello\n");
+  });
+
+  app.get("/bwscript", async (req, res, next) => {
   try {
+      console.log(`Worker ${process.pid} handling request`);
   const browser = await pkg.launch({ args: ["--no-sandbox"] });
   const page = await browser.newPage();
 
@@ -48,6 +65,12 @@ app.get("/bwscript", async (req, res, next) => {
   }
 });
 
+  app.use((err, req, res, next) => {
+    console.error(`Worker ${process.pid} encountered error:`, err);
+    res.status(500).send('Something broke!');
+  });
+}
+
 function delay(time) {
   return new Promise(function(resolve) { 
       setTimeout(resolve, time)
@@ -61,10 +84,8 @@ async function gotoPage(page, url) {
 
   await page.goto(url);
   await page.waitFor(2000);
-  } catch (err) {
-    next(err);
-  }
-  //   await page.screenshot({ path: 'screenshots/'+ url.split(".")[1] + '.png' });
-
   return page;
+  } catch (err) {
+    throw err;
+}
 }
