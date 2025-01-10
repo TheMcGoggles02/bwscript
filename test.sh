@@ -7,7 +7,7 @@ time (
         if [ $i -gt 1 ]; then
             urls+=(--next)
         fi
-        urls+=(-s -k --max-time 5 -X GET "http://localhost:3000/bwscript")
+        urls+=(-s -k --max-time 5 -X GET "http://localhost:1044/bwscript")
     done
     curl "${urls[@]}"
 )
